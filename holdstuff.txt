@@ -1,0 +1,62 @@
+@app.route('/report')
+def report():
+    username = request.args.get('username')
+    api_key = request.args.get('api_key')
+    time_entry = request.args.get('time_entry')
+    latitude = request.args.get('latitude')
+    longitude = request.args.get('longitude')
+    text = request.args.get('text')
+    filename = request.args.get('filename')
+    
+    # Validate latitude and longitude
+    if latitude is None or longitude is None:
+        return jsonify({"error": "Latitude and longitude are required parameters"}), 400
+
+    # Open-Meteo API endpoint
+    res = requests.get(f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m")
+
+    # Check API response status
+    if res.status_code != 200:
+        return jsonify({"error": "Failed to fetch weather data"}), 500
+
+    # Parse JSON response
+    weather_data = res.json()
+
+    # Extract current temperature
+    current_temp = weather_data.get('current', {}).get('temperature_2m', 'N/A')
+
+    print(f"Current temperature: {current_temp}")  # Debug print
+
+    return render_template('report.html',
+                           username=username,
+                           api_key=api_key,
+                           time_entry=time_entry,
+                           latitude=latitude,
+                           longitude=longitude,
+                           text=text,
+                           filename=filename,
+                           ip_address=request.remote_addr,
+                           temperature=current_temp)
+
+
+ # Read Geocode API key from api.txt
+        with open('api.txt', 'r') as file:
+            geocode_api_key = file.read().strip()
+        
+        # Fetch state and country using Geocode.xyz API
+        url = f"https://geocode.xyz/{latitude},{longitude}?json=1&auth={geocode_api_key}"
+        
+        try:
+            response = requests.get(url)
+            data = response.json()
+            
+            print("Response status code:", response.status_code)
+            print("Response text:", response.text)
+            
+            state = data.get('region', 'N/A')
+            country = data.get('country', 'N/A')
+            
+        except Exception as e:
+            print(f"Error fetching location info: {e}")
+            state = 'N/A'
+            country = 'N/A'

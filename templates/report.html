@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report</title>
+</head>
+<body>
+    <h1>Report Submitted Successfully!</h1>
+
+    <h2>User Information</h2>
+    <p><strong>Username:</strong> {{ username }}</p>
+    <p><strong>API Key:</strong> {{ api_key }}</p>
+
+    <!-- Report Details -->
+    <h2>Report Details</h2>
+    <p><strong>Time Entry:</strong> {{ time_entry }}</p>
+    <p><strong>Latitude:</strong> {{ latitude }}</p>
+    <p><strong>Longitude:</strong> {{ longitude }}</p>
+    <p><strong>State:</strong> <span id="state"></span></p>
+    <p><strong>Country:</strong> <span id="country"></span></p>
+    <p><strong>IP Address:</strong> {{ ip_address }}</p>
+    <p><strong>Text:</strong> {{ text }}</p>
+    <p><strong>Temperature:</strong> <span id="temperature"></span>°C</p>
+
+    {% if filename %}
+    <p><strong>File Attached:</strong> {{ filename }}</p>
+    {% endif %}
+
+    <a href="/dashboard/{{ username }}">Back to Dashboard</a>
+
+    <!-- Fetch state and country using Geocode.xyz -->
+    <script>
+        const latitude = {{ latitude }};
+        const longitude = {{ longitude }};
+        
+        // Read Geocode API key from api.txt
+        let apiKey = '';
+        fetch('/get_geocode_api_key')
+            .then(response => response.text())
+            .then(data => {
+                apiKey = data.trim();
+                
+                fetch(`https://geocode.xyz/${latitude},${longitude}?json=1&auth=${apiKey}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        let state = 'N/A';
+                        let country = 'N/A';
+
+                        if (data.region) {
+                            // Take the first word from the region string as the state
+                            state = data.region.split(' ')[0].trim();
+                        }
+
+                        if (data.country) {
+                            country = data.country;
+                        }
+                        
+                        document.getElementById('state').innerText = state;
+                        document.getElementById('country').innerText = country;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching location info:', error);
+                    });
+            });
+
+        // Fetch current temperature using Open-Meteo
+        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m`)
+            .then(response => response.json())
+            .then(data => {
+                const temperature = data.current?.temperature_2m || 'N/A';
+                document.getElementById('temperature').innerText = temperature;
+            })
+            .catch(error => {
+                console.error('Error fetching temperature:', error);
+            });
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
